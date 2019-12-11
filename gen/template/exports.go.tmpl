@@ -1,0 +1,7 @@
+package {{ .Pkg }}
+
+{{- range .E }}
+func (c *Context) {{ .Name | name }}({{ params .Id true }}){{ with returnType .Id }} {{ . }}{{ end }} {
+	{{ if returnType .Id }}return {{ end }}f{{ .Id }}(c, {{ params .Id false }})
+}
+{{ end }}

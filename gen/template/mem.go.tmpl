@@ -1,0 +1,14 @@
+package {{ .Pkg }}
+
+// Max offset: {{ .MaxOff }}
+// Size at max offset: {{ .SizeAtMaxOff }}
+// Segment bytes: {{ .SegmentBytes }}
+
+func newMemory() []byte {
+	mem := make([]byte, {{ .Mem.Size }})
+	{{- range $off, $data := .Mem.Segments }}
+	copy(mem[{{ $off }}:], []byte{
+	{{- range $i, $b := $data }}{{ if $i }}, {{ end }}{{ printf "0x%x" $b }}{{ end }}})
+	{{- end }}
+	return mem
+}
