@@ -19,6 +19,8 @@ var (
 	genExprComments     bool
 	genCamelCaseExports bool
 	genExportExports    bool
+	genMMap             bool
+	genUseUnsafe        bool
 	genCmd              = &cobra.Command{
 		Use:   "gen FILE.ir",
 		Short: "Convert IR to source code",
@@ -33,6 +35,8 @@ func init() {
 	genCmd.Flags().BoolVarP(&genExprComments, "expr_comments", "C", false, "whether to emit expr comments")
 	genCmd.Flags().BoolVarP(&genCamelCaseExports, "camel_case_exports", "c", false, "whether to camel case exports")
 	genCmd.Flags().BoolVarP(&genExportExports, "export_exports", "e", false, "whether to export exports")
+	genCmd.Flags().BoolVarP(&genMMap, "mmap", "m", false, "mmap memory")
+	genCmd.Flags().BoolVarP(&genUseUnsafe, "use_unsafe", "u", false, "use unsafe for memory ops, indirect calls etc")
 }
 
 func genSrc(cmd *cobra.Command, args []string) error {
@@ -54,7 +58,7 @@ func genSrc(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
-	b, err = gen.Context(genPkg, m)
+	b, err = gen.Context(genPkg, m, genMMap, genUseUnsafe)
 	if err != nil {
 		return err
 	}
@@ -89,7 +93,7 @@ func genSrc(cmd *cobra.Command, args []string) error {
 		}
 	}
 	for _, f := range m.Functions {
-		b, err = gen.Func(genPkg, f, m.Globals, genExportExports, genExprComments)
+		b, err = gen.Func(genPkg, f, m.Globals, genExportExports, genExprComments, genMMap, genUseUnsafe)
 		if err != nil {
 			return err
 		}
@@ -98,7 +102,7 @@ func genSrc(cmd *cobra.Command, args []string) error {
 		}
 	}
 	if m.Memory.Size != 0 {
-		b, err = gen.Mem(genPkg, m.Memory)
+		b, err = gen.Mem(genPkg, m.Memory, genMMap)
 		if err != nil {
 			return err
 		}
@@ -111,10 +115,15 @@ func genSrc(cmd *cobra.Command, args []string) error {
 
 func write(filename string, source []byte) error {
 	fn := filepath.Join(genOutDir, filename+".go")
-	var err error
-	source, err = imports.Process(fn, source, nil)
+	// var err error
+	// source, err = imports.Process(fn, source, nil)
+	s, err := imports.Process(fn, source, nil)
 	if err != nil {
+		ioutil.WriteFile("/tmp/"+filename, source, 0644)
+		fmt.Println("*** ERROR ***")
+		fmt.Println(string(source))
 		return err
 	}
+	source = s
 	return ioutil.WriteFile(fn, source, 0644)
 }

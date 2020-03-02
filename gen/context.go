@@ -8,7 +8,7 @@ import (
 )
 
 // Context generates source for the context file.
-func Context(pkg string, m *ir.Module) ([]byte, error) {
+func Context(pkg string, m *ir.Module, mmap bool, useUnsafe bool) ([]byte, error) {
 	asset, err := lookupTemplate("context")
 	if err != nil {
 		return nil, err
@@ -29,11 +29,15 @@ func Context(pkg string, m *ir.Module) ([]byte, error) {
 		return nil, err
 	}
 	data := struct {
-		Pkg string
-		M   *ir.Module
+		Pkg       string
+		M         *ir.Module
+		MMap      bool
+		UseUnsafe bool
 	}{
-		Pkg: pkg,
-		M:   m,
+		Pkg:       pkg,
+		M:         m,
+		MMap:      mmap,
+		UseUnsafe: useUnsafe,
 	}
 	var b bytes.Buffer
 	if err := tmpl.Execute(&b, data); err != nil {

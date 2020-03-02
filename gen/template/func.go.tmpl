@@ -1,9 +1,9 @@
 package {{ .Pkg }}
 
 import (
-	"encoding/binary"
 	"math"
 	"math/bits"
+	{{ if .UseUnsafe }}"unsafe"{{ else }}encoding/binary{{ end }}
 )
 
 func f{{ .F.Id }}(ctx *Context{{ range $j, $t := .F.Sig.ParamTypes }}, l{{ $j }} {{ $t | type }}{{ end }})
@@ -38,13 +38,23 @@ func f{{ .F.Id }}(ctx *Context{{ range $j, $t := .F.Sig.ParamTypes }}, l{{ $j }}
 	if int({{ .Data.TableVar }}) < 0 || int({{ .Data.TableVar }}) >= len(table) {
 		panic("table entry out of bounds")
 	}
+	{{- if $.UseUnsafe }}
+	if table[{{ .Data.TableVar }}].numParams == -1 {
+		panic("table entry is nil")
+	}
+	{{- else }}
 	if table[{{ .Data.TableVar }}].f == nil {
 		panic("table entry is nil")
 	}
+	{{- end }}
 	if table[{{ .Data.TableVar }}].numParams != {{ len .Data.Params }} {
 		panic("argument count mismatch")
 	}
+	{{- if $.UseUnsafe }}
+	{{ with .Data.Var }}{{ . }} = {{ end }}(*(*func(*Context{{ range .Data.ParamTypes }}, {{ . }}{{ end }}){{ with .Data.VarType }} {{ . }}{{ end }})(table[{{ .Data.TableVar }}].f()))(ctx{{ range .Data.Params }}, {{ . }}{{ end }})
+	{{- else }}
 	{{ with .Data.Var }}{{ . }} = {{ end }}table[{{ .Data.TableVar }}].f.(func(*Context{{ range .Data.ParamTypes }}, {{ . }}{{ end }}){{ with .Data.VarType }} {{ . }}{{ end }})(ctx{{ range .Data.Params }}, {{ . }}{{ end }})
+	{{- end }}
 	{{- else if eq .Name "select" }}
 	if {{ .Data.Param3 }} != 0 {
 		{{ if eq .Data.Var .Data.Param1 }}// {{ end }}{{ .Data.Var }} = {{ .Data.Param1 }}
@@ -255,7 +265,7 @@ func f{{ .F.Id }}(ctx *Context{{ range $j, $t := .F.Sig.ParamTypes }}, l{{ $j }}
 	{{- else if eq .Data.Op "i32.trunc_s/f32" }}
 	{{ .Data.Var }} = int32(math.Trunc(float64({{ .Data.Param }})))
 	{{- else if eq .Data.Op "i64.trunc_s/f32" }}
-	{{ .Data.Var }} = int64(math.Trunc(float64({{ .Data.Param }}))
+	{{ .Data.Var }} = int64(math.Trunc(float64({{ .Data.Param }})))
 	{{- else if eq .Data.Op "i32.trunc_u/f32" }}
 	{{ .Data.Var }} = int32(uint32(math.Trunc(float64({{ .Data.Param }}))))
 	{{- else if eq .Data.Op "i64.trunc_u/f32" }}
@@ -295,13 +305,29 @@ func f{{ .F.Id }}(ctx *Context{{ range $j, $t := .F.Sig.ParamTypes }}, l{{ $j }}
 	{{- end }}
 	{{- else if eq .Name "load" }}
 	{{- if eq .Data.Op "i32.load" }}
+	{{- if $.UseUnsafe }}
+	{{ .Data.Var }} = *(*int32)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})]))
+	{{- else }}
 	{{ .Data.Var }} = int32(binary.LittleEndian.Uint32(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }}):]))
+	{{- end }}
 	{{- else if eq .Data.Op "i64.load" }}
+	{{- if $.UseUnsafe }}
+	{{ .Data.Var }} = *(*int64)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})]))
+	{{- else }}
 	{{ .Data.Var }} = int64(binary.LittleEndian.Uint64(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }}):]))
+	{{- end }}
 	{{- else if eq .Data.Op "f32.load" }}
+	{{- if $.UseUnsafe }}
+	{{ .Data.Var }} = *(*float32)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})]))
+	{{- else }}
 	{{ .Data.Var }} = math.Float32frombits(binary.LittleEndian.Uint32(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }}):]))
+	{{- end }}
 	{{- else if eq .Data.Op "f64.load" }}
+	{{- if $.UseUnsafe }}
+	{{ .Data.Var }} = *(*float64)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})]))
+	{{- else }}
 	{{ .Data.Var }} = math.Float64frombits(binary.LittleEndian.Uint64(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }}):]))
+	{{- end }}
 	{{- else if eq .Data.Op "i32.load8_s" }}
 	{{ .Data.Var }} = int32(int8(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})]))
 	{{- else if eq .Data.Op "i64.load8_s" }}
@@ -311,37 +337,85 @@ func f{{ .F.Id }}(ctx *Context{{ range $j, $t := .F.Sig.ParamTypes }}, l{{ $j }}
 	{{- else if eq .Data.Op "i64.load8_u" }}
 	{{ .Data.Var }} = int64(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})])
 	{{- else if eq .Data.Op "i32.load16_s" }}
+	{{- if $.UseUnsafe }}
+	{{ .Data.Var }} = int32(*(*int16)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})])))
+	{{- else }}
 	{{ .Data.Var }} = int32(int16(binary.LittleEndian.Uint16(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }}):])))
+	{{- end }}
 	{{- else if eq .Data.Op "i64.load16_s" }}
+	{{- if $.UseUnsafe }}
+	{{ .Data.Var }} = int64(*(*int16)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})])))
+	{{- else }}
 	{{ .Data.Var }} = int64(int16(binary.LittleEndian.Uint16(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }}):])))
+	{{- end }}
 	{{- else if eq .Data.Op "i32.load16_u" }}
+	{{- if $.UseUnsafe }}
+	{{ .Data.Var }} = int32(*(*uint16)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})])))
+	{{- else }}
 	{{ .Data.Var }} = int32(binary.LittleEndian.Uint16(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }}):]))
+	{{- end }}
 	{{- else if eq .Data.Op "i64.load16_u" }}
+	{{- if $.UseUnsafe }}
+	{{ .Data.Var }} = int64(*(*uint16)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})])))
+	{{- else }}
 	{{ .Data.Var }} = int64(binary.LittleEndian.Uint16(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }}):]))
+	{{- end }}
 	{{- else if eq .Data.Op "i64.load32_s" }}
+	{{- if $.UseUnsafe }}
+	{{ .Data.Var }} = int64(*(*int32)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})])))
+	{{- else }}
 	{{ .Data.Var }} = int64(int32(binary.LittleEndian.Uint32(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }}):])))
+	{{- end }}
 	{{- else if eq .Data.Op "i64.load32_u" }}
+	{{- if $.UseUnsafe }}
+	{{ .Data.Var }} = int64(*(*uint32)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }})])))
+	{{- else }}
 	{{ .Data.Var }} = int64(binary.LittleEndian.Uint32(ctx.Mem[int({{ .Data.Param }} + {{ .Data.Offset }}):]))
+	{{- end }}
 	{{- end }}
 	{{- else if eq .Name "store" }}
 	{{- if eq .Data.Op "i32.store" "i64.store32" }}
+	{{- if $.UseUnsafe }}
+	*(*uint32)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param1 }} + {{ .Data.Offset }})])) = uint32({{ .Data.Param2 }})
+	{{- else }}
 	binary.LittleEndian.PutUint32(ctx.Mem[int({{ .Data.Param1 }} + {{ .Data.Offset }}):], uint32({{ .Data.Param2 }}))
+	{{- end }}
 	{{- else if eq .Data.Op "i32.store8" "i64.store8" }}
 	ctx.Mem[int({{ .Data.Param1 }} + {{ .Data.Offset }})] = uint8({{ .Data.Param2 }})
 	{{- else if eq .Data.Op "i32.store16" "i64.store16" }}
+	{{- if $.UseUnsafe }}
+	*(*uint16)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param1 }} + {{ .Data.Offset }})])) = uint16({{ .Data.Param2 }})
+	{{- else }}
 	binary.LittleEndian.PutUint16(ctx.Mem[int({{ .Data.Param1 }} + {{ .Data.Offset }}):], uint16({{ .Data.Param2 }}))
+	{{- end }}
 	{{- else if eq .Data.Op "i64.store" }}
+	{{- if $.UseUnsafe }}
+	*(*uint64)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param1 }} + {{ .Data.Offset }})])) = uint64({{ .Data.Param2 }})
+	{{- else }}
 	binary.LittleEndian.PutUint64(ctx.Mem[int({{ .Data.Param1 }} + {{ .Data.Offset }}):], uint64({{ .Data.Param2 }}))
+	{{- end }}
 	{{- else if eq .Data.Op "f32.store" }}
+	{{- if $.UseUnsafe }}
+	*(*float32)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param1 }} + {{ .Data.Offset }})])) = {{ .Data.Param2 }}
+	{{- else }}
 	binary.LittleEndian.PutUint32(ctx.Mem[int({{ .Data.Param1 }} + {{ .Data.Offset }}):], math.Float32bits({{ .Data.Param2 }}))
+	{{- end }}
 	{{- else if eq .Data.Op "f64.store" }}
+	{{- if $.UseUnsafe }}
+	*(*float64)(unsafe.Pointer(&ctx.Mem[int({{ .Data.Param1 }} + {{ .Data.Offset }})])) = {{ .Data.Param2 }}
+	{{- else }}
 	binary.LittleEndian.PutUint64(ctx.Mem[int({{ .Data.Param1 }} + {{ .Data.Offset }}):], math.Float64bits({{ .Data.Param2 }}))
+	{{- end }}
 	{{- end }}
 	{{- else if eq .Name "current_mem" }}
 	{{ .Data.Var }} = int32(len(ctx.Mem) / 65536)
 	{{- else if eq .Name "grow_mem" }}
 	{{ .Data.Var }} = int32(len(ctx.Mem) / 65536)
+	{{- if $.MMap }}
+	panic("growMem not supported when using mmap yet")
+	{{- else }}
 	ctx.growMem(int({{ .Data.Param }}) * 65536)
+	{{- end }}
 	{{- else if and (eq .Name "loop") .Data.HasLabel }}
 lbl{{ .Data.LabelID }}:
 	{{- else if eq .Name "if" }}

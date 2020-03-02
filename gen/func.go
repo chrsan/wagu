@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/go-interpreter/wagon/wasm/operators"
-
 	"github.com/chrsan/wagu/ir"
+	"github.com/go-interpreter/wagon/wasm/operators"
 )
 
 // Func generates source for a function.
-func Func(pkg string, f *ir.Function, globals []*ir.Value, exported, exprComments bool) ([]byte, error) {
+// TODO: Remove mmap param one growMem is implemented when using mmap.
+func Func(pkg string, f *ir.Function, globals []*ir.Value, exported, exprComments, mmap, useUnsafe bool) ([]byte, error) {
 	asset, err := lookupTemplate("func")
 	if err != nil {
 		return nil, err
@@ -31,6 +31,8 @@ func Func(pkg string, f *ir.Function, globals []*ir.Value, exported, exprComment
 		Exprs        []expr
 		Exported     bool
 		ExprComments bool
+		MMap         bool
+		UseUnsafe    bool
 	}{
 		Pkg:          pkg,
 		F:            f,
@@ -38,6 +40,8 @@ func Func(pkg string, f *ir.Function, globals []*ir.Value, exported, exprComment
 		Exprs:        exprs(f, globals),
 		Exported:     exported,
 		ExprComments: exprComments,
+		MMap:         mmap,
+		UseUnsafe:    useUnsafe,
 	}
 	var b bytes.Buffer
 	if err := tmpl.Execute(&b, data); err != nil {

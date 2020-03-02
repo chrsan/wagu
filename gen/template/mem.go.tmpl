@@ -1,11 +1,22 @@
 package {{ .Pkg }}
+{{- if .MMap }}
+
+import "github.com/edsrzf/mmap-go"
+{{- end }}
 
 // Max offset: {{ .MaxOff }}
 // Size at max offset: {{ .SizeAtMaxOff }}
 // Segment bytes: {{ .SegmentBytes }}
 
 func newMemory() []byte {
+	{{- if .MMap }}
+	mem, err := mmap.MapRegion(nil, {{ .Mem.Size }}, mmap.RDWR, mmap.ANON, 0)
+	if err != nil {
+		panic(err)
+	}
+	{{- else }}
 	mem := make([]byte, {{ .Mem.Size }})
+	{{- end }}
 	{{- range $off, $data := .Mem.Segments }}
 	copy(mem[{{ $off }}:], []byte{
 	{{- range $i, $b := $data }}{{ if $i }}, {{ end }}{{ printf "0x%x" $b }}{{ end }}})

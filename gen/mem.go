@@ -8,7 +8,7 @@ import (
 )
 
 // Mem generates source for the mem file.
-func Mem(pkg string, mem *ir.Memory) ([]byte, error) {
+func Mem(pkg string, mem *ir.Memory, mmap bool) ([]byte, error) {
 	asset, err := lookupTemplate("mem")
 	if err != nil {
 		return nil, err
@@ -41,12 +41,14 @@ func Mem(pkg string, mem *ir.Memory) ([]byte, error) {
 	data := struct {
 		Pkg          string
 		Mem          *ir.Memory
+		MMap         bool
 		MaxOff       uint32
 		SizeAtMaxOff int
 		SegmentBytes int
 	}{
 		Pkg:          pkg,
 		Mem:          mem,
+		MMap:         mmap,
 		MaxOff:       maxOff,
 		SizeAtMaxOff: sizeAtMaxOff,
 		SegmentBytes: segmentBytes,
