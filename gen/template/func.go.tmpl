@@ -3,7 +3,7 @@ package {{ .Pkg }}
 import (
 	"math"
 	"math/bits"
-	{{ if .UseUnsafe }}"unsafe"{{ else }}encoding/binary{{ end }}
+	{{ if .UseUnsafe }}"unsafe"{{ else }}"encoding/binary"{{ end }}
 )
 
 func f{{ .F.Id }}(ctx *Context{{ range $j, $t := .F.Sig.ParamTypes }}, l{{ $j }} {{ $t | type }}{{ end }})
@@ -29,9 +29,9 @@ func f{{ .F.Id }}(ctx *Context{{ range $j, $t := .F.Sig.ParamTypes }}, l{{ $j }}
 	{{- else if eq .Name "set_local" "tee_local" }}
 	{{ .Data.Local }} = {{ .Data.Var }}
 	{{- else if eq .Name "get_global" }}
-	{{ .Data.Var }} = ctx.g{{ .Data.GlobalIdx }}
+	{{ .Data.Var }} = ctx.G{{ .Data.GlobalIdx }}
 	{{- else if eq .Name "set_global" }}
-	ctx.g{{ .Data.GlobalIdx }} = {{ .Data.Var }}
+	ctx.G{{ .Data.GlobalIdx }} = {{ .Data.Var }}
 	{{- else if eq .Name "call" }}
 	{{ with .Data.Var }}{{ . }} = {{ end }}f{{ .Data.FuncIdx}}(ctx{{ range .Data.Params }}, {{ . }}{{ end }})
 	{{- else if eq .Name "call_indirect" }}

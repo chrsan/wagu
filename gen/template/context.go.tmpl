@@ -19,14 +19,14 @@ type Context struct {
 	f ImportedFuncs
 	{{- end }}
 	{{- range $i, $v := .M.Globals }}
-	g{{ $i }} {{ $v | type }}
+	G{{ $i }} {{ $v | type }}
 	{{- end }}
 }
 
 func NewContext({{ if .M.ImportedFunctions }}f ImportedFuncs{{ end }}) *Context {
 	c := &Context{Mem: newMemory(){{ if .M.ImportedFunctions }}, f: f{{ end }}}
 	{{- range $i, $v := .M.Globals }}
-	c.g{{ $i }} = {{ $v | value }}
+	c.G{{ $i }} = {{ $v | value }}
 	{{- end }}
 	return c
 }

@@ -34,7 +34,7 @@ func init() {
 	genCmd.Flags().StringVarP(&genPkg, "pkg", "p", "gen", "package name")
 	genCmd.Flags().BoolVarP(&genExprComments, "expr_comments", "C", false, "whether to emit expr comments")
 	genCmd.Flags().BoolVarP(&genCamelCaseExports, "camel_case_exports", "c", false, "whether to camel case exports")
-	genCmd.Flags().BoolVarP(&genExportExports, "export_exports", "e", false, "whether to export exports")
+	genCmd.Flags().BoolVarP(&genExportExports, "export_exports", "e", true, "whether to export exports")
 	genCmd.Flags().BoolVarP(&genMMap, "mmap", "m", false, "mmap memory")
 	genCmd.Flags().BoolVarP(&genUseUnsafe, "use_unsafe", "u", false, "use unsafe for memory ops, indirect calls etc")
 }
@@ -93,7 +93,7 @@ func genSrc(cmd *cobra.Command, args []string) error {
 		}
 	}
 	for _, f := range m.Functions {
-		b, err = gen.Func(genPkg, f, m.Globals, genExportExports, genExprComments, genMMap, genUseUnsafe)
+		b, err = gen.Func(genPkg, f, m.Globals, genExprComments, genMMap, genUseUnsafe)
 		if err != nil {
 			return err
 		}
@@ -115,15 +115,10 @@ func genSrc(cmd *cobra.Command, args []string) error {
 
 func write(filename string, source []byte) error {
 	fn := filepath.Join(genOutDir, filename+".go")
-	// var err error
-	// source, err = imports.Process(fn, source, nil)
-	s, err := imports.Process(fn, source, nil)
+	var err error
+	source, err = imports.Process(fn, source, nil)
 	if err != nil {
-		ioutil.WriteFile("/tmp/"+filename, source, 0644)
-		fmt.Println("*** ERROR ***")
-		fmt.Println(string(source))
 		return err
 	}
-	source = s
 	return ioutil.WriteFile(fn, source, 0644)
 }

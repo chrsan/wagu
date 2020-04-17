@@ -11,7 +11,7 @@ import (
 
 // Func generates source for a function.
 // TODO: Remove mmap param one growMem is implemented when using mmap.
-func Func(pkg string, f *ir.Function, globals []*ir.Value, exported, exprComments, mmap, useUnsafe bool) ([]byte, error) {
+func Func(pkg string, f *ir.Function, globals []*ir.Value, exprComments, mmap, useUnsafe bool) ([]byte, error) {
 	asset, err := lookupTemplate("func")
 	if err != nil {
 		return nil, err
@@ -38,7 +38,6 @@ func Func(pkg string, f *ir.Function, globals []*ir.Value, exported, exprComment
 		F:            f,
 		StackVars:    stackVars(f),
 		Exprs:        exprs(f, globals),
-		Exported:     exported,
 		ExprComments: exprComments,
 		MMap:         mmap,
 		UseUnsafe:    useUnsafe,
