@@ -55,7 +55,7 @@ func val(v *ir.Value) interface{} {
 	case *ir.Value_F32:
 		switch {
 		case math.IsNaN(float64(vk.F32)):
-			x = "float32(math.Nan())"
+			x = "float32(math.NaN())"
 		case math.IsInf(float64(vk.F32), 0):
 			x = "float32(math.Inf(0))"
 		default:
@@ -64,7 +64,7 @@ func val(v *ir.Value) interface{} {
 	case *ir.Value_F64:
 		switch {
 		case math.IsNaN(vk.F64):
-			x = "math.Nan()"
+			x = "math.NaN()"
 		case math.IsInf(vk.F64, 0):
 			x = "math.Inf(0)"
 		default:
