@@ -1,8 +1,0 @@
-package {{ .Pkg }}
-
-type ImportedFuncs interface {
-{{- range $i, $f := .ImportedFuncs }}
-	// module: {{ $f.Module }}, field: {{ $f.Field }}
-	F{{ $i }}(ctx *Context{{ $f.ParamTypes }}){{ with $f.ReturnType }} {{ . }}{{ end }}
-{{- end }}
-}

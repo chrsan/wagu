@@ -1,8 +1,0 @@
-package {{ .Pkg }}
-
-{{- with .ImportedFunc }}
-// module: {{ .Module }}, field: {{ .Field }}
-func f{{ $.ID }}(ctx *Context{{ .ParamTypes }}){{- with .ReturnType }} {{ . }}{{ end }} {
-	{{ if .ReturnType }}return {{ end }}ctx.f.F{{ $.ID }}(ctx{{ .Params }})
-}
-{{- end }}
